@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +11,7 @@ using SD_340_W22SD_Final_Project_Group6.Models;
 
 namespace SD_340_W22SD_Final_Project_Group6.Controllers
 {
+    [Authorize(Roles = "ProjectManager")]
     public class ProjectsController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -22,6 +24,7 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
         // GET: Projects
         public async Task<IActionResult> Index()
         {
+              
               return _context.Projects != null ? 
                           View(await _context.Projects.ToListAsync()) :
                           Problem("Entity set 'ApplicationDbContext.Projects'  is null.");
@@ -37,6 +40,9 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
 
             var project = await _context.Projects
                 .FirstOrDefaultAsync(m => m.Id == id);
+            var userID = project.CreatedBy;
+            var user = _context.Users.FirstOrDefault(u => u.Id == userID);
+            ViewBag.UserName = user.Name;
             if (project == null)
             {
                 return NotFound();
@@ -48,6 +54,9 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
         // GET: Projects/Create
         public IActionResult Create()
         {
+            var userName = User.Identity.Name;
+            var user = _context.Users.First(u => u.UserName == userName);
+            ViewBag.UserId = user.Id;
             return View();
         }
 
@@ -56,7 +65,7 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,ProjectName")] Project project)
+        public async Task<IActionResult> Create([Bind("Id,ProjectName,CreatedBy")] Project project)
         {
             if (ModelState.IsValid)
             {
@@ -88,7 +97,7 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,ProjectName")] Project project)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,ProjectName,CreatedBy")] Project project)
         {
             if (id != project.Id)
             {

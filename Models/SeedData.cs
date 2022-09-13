@@ -75,14 +75,14 @@ namespace SD_340_W22SD_Final_Project_Group6.Models
                 Project newProj1 = new Project()
                 {
                     ProjectName = "Seed Project One",
-                    CreatedBy = context.Users.First(),
+                    CreatedBy = context.Users.First().Id,
                 };
                 await context.Projects.AddAsync(newProj1);
 
                 Project newProj2 = new Project()
                 {
                     ProjectName = "Seed Project Two",
-                    CreatedBy = context.Users.First(),
+                    CreatedBy = context.Users.First().Id,
                 };
                 await context.Projects.AddAsync(newProj2);
 
