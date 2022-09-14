@@ -12,7 +12,7 @@ using SD_340_W22SD_Final_Project_Group6.Data;
 namespace SD_340_W22SD_Final_Project_Group6.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20220914041239_makeProjectUserClass")]
+    [Migration("20220914160552_makeProjectUserClass")]
     partial class makeProjectUserClass
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

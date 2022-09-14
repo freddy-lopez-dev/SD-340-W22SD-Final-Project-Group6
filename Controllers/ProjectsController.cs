@@ -168,5 +168,11 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
         {
           return (_context.Projects?.Any(e => e.Id == id)).GetValueOrDefault();
         }
+        public IActionResult AssignUser(int id)
+        {
+            var Project = _context.Projects.FirstOrDefault(project => project.Id == id);
+
+            return View();
+        }
     }
 }
