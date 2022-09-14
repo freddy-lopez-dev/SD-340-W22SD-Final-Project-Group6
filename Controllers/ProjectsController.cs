@@ -172,6 +172,14 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
         {
             var Project = _context.Projects.FirstOrDefault(project => project.Id == id);
 
+            var UserNotInTheProject = _context.Users.Include(u => u.ProjectUsers).Where(u => !u.ProjectUsers.Select(pu => pu.ProjectId).Contains(id));
+
+            ViewBag.UserList = new SelectList(UserNotInTheProject, "id", "Name");
+            ViewBag.ProjectId = id;
+            ViewBag.ProjectName = Project.ProjectName;
+
+
+
             return View();
         }
     }
