@@ -24,9 +24,10 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
         // GET: Projects
         public async Task<IActionResult> Index()
         {
-              
-              return _context.Projects != null ? 
-                          View(await _context.Projects.ToListAsync()) :
+            var project = _context.Projects.Include(p => p.AssignedTo).ThenInclude(pu => pu.User);
+
+              return project != null ? 
+                          View(project.ToList()) :
                           Problem("Entity set 'ApplicationDbContext.Projects'  is null.");
         }
 
@@ -178,9 +179,20 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
             ViewBag.ProjectId = id;
             ViewBag.ProjectName = Project.ProjectName;
 
-
-
             return View();
         }
+
+        [HttpPost]
+        public IActionResult AssignUser(int ProjectId, string UserId)
+        {
+            var newProjectUser = new ProjectUser();
+            newProjectUser.ProjectId = ProjectId;
+            newProjectUser.UserId = UserId;
+            _context.ProjectUser.Add(newProjectUser);
+            _context.SaveChanges();
+
+            return RedirectToAction(nameof(Index));
+        }
+
     }
 }

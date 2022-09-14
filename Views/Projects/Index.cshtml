@@ -19,6 +19,9 @@
             <th>
                 @Html.DisplayNameFor(model => model.CreatedBy)
             </th>
+            <th>
+                Assigned Users
+            </th>
             <th></th>
         </tr>
     </thead>
@@ -30,6 +33,16 @@
             </td>
             <td>
                 @Html.DisplayFor(modelItem => item.CreatedBy)
+            </td>
+            <td>
+                <ol>
+                    @foreach (var projectUser in item.AssignedTo)
+                    {
+                        <li>@projectUser.User.Name</li>
+                    }
+
+                </ol>
+
             </td>
             <td>
                 <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |

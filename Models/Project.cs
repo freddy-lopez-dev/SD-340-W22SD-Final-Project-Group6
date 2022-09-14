@@ -9,9 +9,14 @@ namespace SD_340_W22SD_Final_Project_Group6.Models
         [MinLength(5)]
         public string ProjectName { get; set; }
         public string CreatedBy { get; set; }
+        public ICollection<ProjectUser> AssignedTo { get; set; }
+        public ICollection<Ticket> Tickets { get; set; }
 
-        public ICollection<ProjectUser>? AssignedTo = new HashSet<ProjectUser>();
-        public ICollection<Ticket>? Tickets = new HashSet<Ticket>();
+        public Project()
+        {
+            AssignedTo = new HashSet<ProjectUser>();
+            Tickets = new HashSet<Ticket>();
+        }
 
     }
 }
