@@ -174,7 +174,7 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
 
             var UserNotInTheProject = _context.Users.Include(u => u.ProjectUsers).Where(u => !u.ProjectUsers.Select(pu => pu.ProjectId).Contains(id));
 
-            ViewBag.UserList = new SelectList(UserNotInTheProject, "id", "Name");
+            ViewBag.UserList = new SelectList(UserNotInTheProject, "Id", "Name");
             ViewBag.ProjectId = id;
             ViewBag.ProjectName = Project.ProjectName;
 
