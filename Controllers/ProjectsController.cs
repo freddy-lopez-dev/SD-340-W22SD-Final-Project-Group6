@@ -93,7 +93,7 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
             if (ModelState.IsValid)
             {
                 string userName = User.Identity.Name;
-                ApplicationUser user = _context.Users.First(u => u.UserName == userName);
+                ApplicationUser user = _context.Users.FirstOrDefault(u => u.UserName == userName);
                 project.CreatedBy = user;
                 _context.Add(project);
                 await _context.SaveChangesAsync();
