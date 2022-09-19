@@ -19,6 +19,7 @@ namespace SD_340_W22SD_Final_Project_Group6.Models
         public ApplicationUser? Owner { get; set; } 
 
         public Project? Project { get; set; }
+        //Add ProjectId foreign key
 
         public Priority? TicketPriority { get; set; }
         public bool? Completed { get; set; } = false;

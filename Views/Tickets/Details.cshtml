@@ -77,7 +77,7 @@
 			</ol>
 		</dl>
 	}
-	@if (Model.TicketWatchers.Any(tw => tw.Watcher.UserName == User.Identity.Name))
+	@if (Model.TicketWatchers.Any(tw => tw.Watcher.UserName == User.Identity.Name) && User.Identity.Name != Model.Owner.UserName)
 	{
 		<dl class="row">
 			<dt class="col-sm-2">

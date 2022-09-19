@@ -54,9 +54,9 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
         }
 
         // GET: Tickets/Create
-        public IActionResult Create(int projId)
+        public async Task<IActionResult> Create(int projId)
         {
-            Project currProject = _context.Projects.Include(p => p.AssignedTo).ThenInclude(at => at.ApplicationUser).FirstOrDefault(p => p.Id == projId);
+            Project currProject = await _context.Projects.Include(p => p.AssignedTo).ThenInclude(at => at.ApplicationUser).FirstOrDefaultAsync(p => p.Id == projId);
 
             List<SelectListItem> currUsers = new List<SelectListItem>();
             currProject.AssignedTo.ToList().ForEach(t =>
@@ -80,13 +80,20 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
         {
             if (ModelState.IsValid)
             { 
+                //try catch this
                 ticket.Project = await _context.Projects.FirstAsync(p => p.Id == projId);
                 Project currProj = await _context.Projects.FirstOrDefaultAsync(p => p.Id == projId);
                 ApplicationUser owner = _context.Users.FirstOrDefault(u => u.Id == userId);
+                TicketWatcher newTW = new TicketWatcher();
+                // This might be a duplicate view for owner and ticket.
+                newTW.Ticket = ticket;
+                newTW.Watcher = owner;
                 ticket.Owner = owner;
+                _context.TicketWatchers.Add(newTW);
                 _context.Add(ticket);
                 currProj.Tickets.Add(ticket);
                 await _context.SaveChangesAsync();
+                //Check the new object area
                 return RedirectToAction("Index","Projects", new { area = ""});
             }
             return View(ticket);
