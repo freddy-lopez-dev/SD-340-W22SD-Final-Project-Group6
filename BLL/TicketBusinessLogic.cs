@@ -16,7 +16,7 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
             _repo.Add(ticket);
         }
 
-        public void DelelteTicket(Ticket ticket)
+        public void Delete(Ticket ticket)
         {
             _repo.Delete(ticket);
         }
