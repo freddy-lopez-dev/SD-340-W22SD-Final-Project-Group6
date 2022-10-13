@@ -26,7 +26,7 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
             return View(vm);
         }
 
-        public async Task<IActionResult> ReassignRoleAsync()
+        public async Task<IActionResult> GetAllUsersAsync()
         {
             List<ApplicationUser> allUsers = (List<ApplicationUser>)(await userBL.GetAllUsers())[0];
             ViewBag.Users = (List<SelectListItem>)(await userBL.GetAllUsers())[1];
