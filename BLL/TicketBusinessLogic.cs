@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
-using SD_340_W22SD_Final_Project_Group6.DAL;
+﻿using SD_340_W22SD_Final_Project_Group6.DAL;
 using SD_340_W22SD_Final_Project_Group6.Models;
 
 namespace SD_340_W22SD_Final_Project_Group6.BLL
@@ -7,7 +6,7 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
     public class TicketBusinessLogic
     {
         private IRepository<Ticket> _repo;
-        public TicketBusinessLogic(IRepository<Ticket> repository) //UserManager<ApplicationUser> userManager)
+        public TicketBusinessLogic(IRepository<Ticket> repository)
         {
             _repo = repository;
         }

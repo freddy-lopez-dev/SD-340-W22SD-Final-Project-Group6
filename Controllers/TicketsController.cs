@@ -14,7 +14,6 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
     [Authorize]
     public class TicketsController : Controller
     {
-        //private readonly ApplicationDbContext _context;
         private TicketBusinessLogic ticketBL;
 
         private UserBusinessLogic userBL;
@@ -60,10 +59,9 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
         [Authorize(Roles = "ProjectManager")]
         public IActionResult Create(int projId)
         {
-            //Project currProject = _context.Projects.Include(p => p.AssignedTo).ThenInclude(at => at.ApplicationUser).FirstOrDefault(p => p.Id == projId);
             Project currProject = projectBL.GetProject(projId);
-
             List<SelectListItem> currUsers = new List<SelectListItem>();
+
             currProject.AssignedTo.ToList().ForEach(t =>
             {
                 currUsers.Add(new SelectListItem(t.ApplicationUser.UserName, t.ApplicationUser.Id.ToString()));
@@ -128,10 +126,8 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
             }
             Ticket currTicket = ticketBL.GetTicket(ticketId);
             ApplicationUser currUser = await userBL.GetUser(id);
-            //To be fixed ASAP
             currTicket.Owner = currUser;
             ticketBL.UpdateTicket(currTicket);
-
 
             return RedirectToAction("Edit", new { id = ticketId });
         }
@@ -229,9 +225,7 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
                     newTickWatch.Watcher = user;
                     user.TicketWatching.Add(newTickWatch);
                     ticket.TicketWatchers.Add(newTickWatch);
-                    //_context.Add(newTickWatch);
 
-                    //await _context.SaveChangesAsync();
                     return RedirectToAction("Details", new { id });
                 }
                 catch (Exception)
@@ -279,9 +273,9 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
                     return RedirectToAction("Error", "Home");
                 }
             }
+
             return RedirectToAction("Index");
         }
-
 
         // GET: Tickets/Delete/5
         [Authorize(Roles = "ProjectManager")]

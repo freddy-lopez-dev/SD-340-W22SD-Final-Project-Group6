@@ -44,22 +44,22 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
                 case "Priority":
                     if (sort == true)
                     {
-                        SortedProjs = projectBL.OrderedByPriority();
+                        SortedProjs = projectBL.OrderByPriority();
                     }
                     else
                     {
-                        SortedProjs = projectBL.OrderedByPriorityAsc();
+                        SortedProjs = projectBL.OrderByPriorityAsc();
                     }
 
                     break;
                 case "RequiredHrs":
                     if (sort == true)
                     {
-                        SortedProjs = projectBL.OrderedByRequiredHours();
+                        SortedProjs = projectBL.OrderByRequiredHours();
                     }
                     else
                     {
-                        SortedProjs = projectBL.OrderedByRequiredHoursAsc();
+                        SortedProjs = projectBL.OrderByRequiredHoursAsc();
                     }
 
                     break;
@@ -105,6 +105,7 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
             }
 
             var project = projectBL.GetProject((int)id);
+
             if (project == null)
             {
                 return NotFound();

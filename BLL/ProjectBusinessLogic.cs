@@ -49,22 +49,22 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
             repo.Save();
         }
 
-        public List<Project> OrderedByPriority()
+        public List<Project> OrderByPriority()
         {
             return (List<Project>)repo.GetAll().OrderByDescending(p => p.Tickets.OrderByDescending(t => t.TicketPriority));
         }
 
-        public List<Project> OrderedByPriorityAsc()
+        public List<Project> OrderByPriorityAsc()
         {
             return (List<Project>)repo.GetAll().OrderBy(p => p.Tickets.OrderBy(t => t.TicketPriority));
         }
 
-        public List<Project> OrderedByRequiredHours()
+        public List<Project> OrderByRequiredHours()
         {
             return (List<Project>)repo.GetAll().OrderByDescending(p => p.Tickets.OrderByDescending(t => t.RequiredHours));
         }
 
-        public List<Project> OrderedByRequiredHoursAsc()
+        public List<Project> OrderByRequiredHoursAsc()
         {
             return (List<Project>)repo.GetAll().OrderBy(p => p.Tickets.OrderBy(t => t.RequiredHours));
         }
