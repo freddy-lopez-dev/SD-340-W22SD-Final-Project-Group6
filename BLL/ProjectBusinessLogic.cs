@@ -73,5 +73,19 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
         {
             return (List<Project>)repo.GetAll();
         }
+
+        public void AddTicketToProject(Project project, Ticket ticket)
+        {
+            project.Tickets.Add(ticket);
+            repo.Update(project);
+            repo.Save();
+        }
+
+        public void RemoveTicketFromProject(Project project, Ticket ticket)
+        {
+            project.Tickets.Remove(ticket);
+            repo.Update(project);
+            repo.Save();
+        }
     }
 }
