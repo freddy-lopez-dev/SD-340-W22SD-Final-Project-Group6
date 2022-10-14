@@ -17,7 +17,7 @@ namespace SD_340_W22SD_Final_Project_Group6.BLL
             repo.Save();
         }
 
-        public void DelelteProject(Project project)
+        public void DeleteProject(Project project)
         {
             repo.Delete(project);
             repo.Save();
