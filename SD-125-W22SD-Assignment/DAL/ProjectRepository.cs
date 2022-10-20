@@ -12,7 +12,7 @@ namespace SD_340_W22SD_Final_Project_Group6.DAL
             _db = db;
         }
 
-        public void Add(Project project)
+        public void Create(Project project)
         {
             _db.Projects.Add(project);
         }
@@ -22,14 +22,14 @@ namespace SD_340_W22SD_Final_Project_Group6.DAL
             _db.Projects.Remove(project);
         }
 
-        public Project Get(int id)
+        public Project? GetById(int id)
         {
-            return _db.Projects.Include(p => p.AssignedTo).Include(p => p.Tickets).First(p => p.Id == id);
+            return _db.Projects.Include(p => p.CreatedBy).Include(p => p.AssignedTo).Include(p => p.Tickets).ThenInclude(t => t.Owner).Include(p => p.Tickets).ThenInclude(t => t.TicketWatchers).ThenInclude(tw => tw.Watcher).First(p => p.Id == id);
         }
 
-        public Project Get(Func<Project, bool> predicate)
+        public Project? Get(Func<Project, bool> predicate)
         {
-            return _db.Projects.Include(p => p.AssignedTo).Include(p => p.Tickets).First(predicate);
+            return _db.Projects.Include(p => p.CreatedBy).Include(p => p.AssignedTo).Include(p => p.Tickets).ThenInclude(t => t.Owner).Include(p => p.Tickets).ThenInclude(t => t.TicketWatchers).ThenInclude(tw => tw.Watcher).First(predicate);
         }
 
         public ICollection<Project> GetAll()
@@ -39,8 +39,18 @@ namespace SD_340_W22SD_Final_Project_Group6.DAL
 
         public ICollection<Project> GetList(Func<Project, bool> predicate)
         {
-            return _db.Projects.Include(p => p.AssignedTo).Include(p => p.Tickets).Where(predicate).ToList();
+            return _db.Projects.Include(p => p.CreatedBy).Include(p => p.AssignedTo).ThenInclude(at => at.ApplicationUser).Include(p => p.Tickets).ThenInclude(t => t.Owner).Include(p => p.Tickets).ThenInclude(t => t.TicketWatchers).ThenInclude(tw => tw.Watcher).Where(predicate).ToList();
         }
+
+        //public ICollection<Project> GetList(int offset, int count)
+        //{
+        //    return _db.Projects.Include(p => p.CreatedBy).Include(p => p.AssignedTo).Include(p => p.Tickets).ThenInclude(t => t.Owner).Include(p => p.Tickets).ThenInclude(t => t.TicketWatchers).ThenInclude(tw => tw.Watcher).Skip(offset).Take(count).ToList(); 
+        //}
+
+        //public int Count()
+        //{
+        //    return _db.Projects.Count();
+        //}
 
         public void Save()
         {
@@ -49,8 +59,17 @@ namespace SD_340_W22SD_Final_Project_Group6.DAL
 
         public Project Update(Project project)
         {
-            _db.Projects.Update(project);
-            return project;
+            return _db.Projects.Update(project).Entity;
+        }
+
+        public void RemoveAssignedUser(int projectId, string userId)
+        {
+            List<UserProject> userProjects = _db.UserProjects.Where(up => up.ProjectId == projectId && up.UserId == userId).ToList();
+
+            foreach (UserProject userProject in userProjects)
+            {
+                _db.UserProjects.Remove(userProject);
+            }
         }
     }
 }

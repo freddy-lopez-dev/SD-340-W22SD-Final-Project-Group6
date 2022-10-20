@@ -15,30 +15,34 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
     public class TicketsController : Controller
     {
         private TicketBusinessLogic ticketBL;
-
         private UserBusinessLogic userBL;
         private ProjectBusinessLogic projectBL;
         private CommentBusinessLogic commentBL;
 
         public TicketsController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
         {
-            ticketBL = new TicketBusinessLogic(new TicketRepository(context));
             userBL = new UserBusinessLogic(userManager);
-            projectBL = new ProjectBusinessLogic(new ProjectRepository(context));
-            commentBL = new CommentBusinessLogic(new CommentRepository(context));
+            projectBL = new ProjectBusinessLogic(new ProjectRepository(context), new TicketRepository(context), userManager);
+            ticketBL = new TicketBusinessLogic(userManager, new ProjectRepository(context), new TicketRepository(context), new CommentRepository(context));
+            commentBL = new CommentBusinessLogic(new CommentRepository(context), new ProjectRepository(context), new TicketRepository(context), userManager);
+
         }
 
         // GET: Tickets
         public async Task<IActionResult> Index()
         {
-            return View(ticketBL.GetTickets().ToList());
+            return View(ticketBL.GetAllTickets().ToList());
         }
 
         // GET: Tickets/Details/5
-        public async Task<IActionResult> Details(int? id)
+        public IActionResult Details(int? id)
         {
+            if (id == null)
+            {
+                return NotFound();
+            }
 
-            Ticket ticket = ticketBL.GetTicket((int)id);
+            Ticket? ticket = ticketBL.GetTicketById((int)id);
 
             if (ticket == null)
             {
@@ -46,7 +50,7 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
             }
 
             List<SelectListItem> currUsers = new List<SelectListItem>();
-            ticket.Project.AssignedTo.ToList().ForEach(t =>
+            ticket.Project?.AssignedTo.ToList().ForEach(t =>
             {
                 currUsers.Add(new SelectListItem(t.ApplicationUser.UserName, t.ApplicationUser.Id.ToString()));
             });
@@ -59,7 +63,13 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
         [Authorize(Roles = "ProjectManager")]
         public IActionResult Create(int projId)
         {
-            Project currProject = projectBL.GetProject(projId);
+            Project? currProject = projectBL.GetProjectById(projId);
+
+            if (currProject == null)
+            {
+                return NotFound();
+            }
+
             List<SelectListItem> currUsers = new List<SelectListItem>();
 
             currProject.AssignedTo.ToList().ForEach(t =>
@@ -83,12 +93,8 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
         {
             if (ModelState.IsValid)
             {
-                ticket.Project = projectBL.GetProject(projId);
-                Project currProj = projectBL.GetProject(projId);
-                ApplicationUser owner = await userBL.GetUser(userId);
-                ticket.Owner = owner;
-                ticketBL.AddTicket(ticket);
-                projectBL.AddTicketToProject(currProj, ticket);
+                await ticketBL.CreateTicket(ticket, projId, userId);
+
                 return RedirectToAction("Index", "Projects", new { area = "" });
             }
             return View(ticket);
@@ -98,16 +104,22 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
         [Authorize(Roles = "ProjectManager")]
         public async Task<IActionResult> Edit(int? id)
         {
-            Ticket ticket = ticketBL.GetTicket((int)id);
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            Ticket? ticket = ticketBL.GetTicketById((int)id);
 
             if (ticket == null)
             {
                 return NotFound();
             }
 
-            List<ApplicationUser> results = userBL.GetAllUsers(ticket.Owner.Id).ToList();
-            List<SelectListItem> currUsers = new List<SelectListItem>();
+            List<ApplicationUser> developers = await userBL.GetUsersByRole("Developer");
+            List<ApplicationUser> results = developers.Where(u => u != ticket.Owner).ToList();
 
+            List<SelectListItem> currUsers = new List<SelectListItem>();
             results.ForEach(r =>
             {
                 currUsers.Add(new SelectListItem(r.UserName, r.Id.ToString()));
@@ -117,20 +129,20 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
             return View(ticket);
         }
 
-        [Authorize(Roles = "ProjectManager")]
-        public async Task<IActionResult> RemoveAssignedUser(string id, int ticketId)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-            Ticket currTicket = ticketBL.GetTicket(ticketId);
-            ApplicationUser currUser = await userBL.GetUser(id);
-            currTicket.Owner = currUser;
-            ticketBL.UpdateTicket(currTicket);
+        //[Authorize(Roles = "ProjectManager")]
+        //public async Task<IActionResult> RemoveAssignedUser(string id, int ticketId)
+        //{
+        //    if (id == null)
+        //    {
+        //        return NotFound();
+        //    }
+        //    Ticket currTicket = ticketBL.GetTicket(ticketId);
+        //    ApplicationUser currUser = await userBL.GetUser(id);
+        //    currTicket.Owner = currUser;
+        //    ticketBL.UpdateTicket(currTicket);
 
-            return RedirectToAction("Edit", new { id = ticketId });
-        }
+        //    return RedirectToAction("Edit", new { id = ticketId });
+        //}
 
         // POST: Tickets/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
@@ -151,35 +163,29 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
                 {
                     ApplicationUser currUser = await userBL.GetUser(userId);
                     ticket.Owner = currUser;
-                    ticketBL.UpdateTicket(ticket);
+                    await ticketBL.UpdateTicket(ticket);
                 }
                 catch (DbUpdateConcurrencyException)
                 {
                     return NotFound();
                 }
+
                 return RedirectToAction(nameof(Edit), new { id = ticket.Id });
             }
+
             return View(ticket);
         }
 
         [HttpPost]
-        public async Task<IActionResult> CommentTask(int TaskId, string? TaskText)
+        public async Task<IActionResult> CommentTask(int? TaskId, string? TaskText)
         {
             if (TaskId != null || TaskText != null)
             {
                 try
                 {
-                    Comment newComment = new Comment();
-                    string userName = User.Identity.Name;
-                    ApplicationUser user = await userBL.GetUserByName(userName);
-                    Ticket ticket = ticketBL.GetTicket(TaskId);
-
-                    newComment.CreatedBy = user;
-                    newComment.Description = TaskText;
-                    newComment.Ticket = ticket;
-                    commentBL.AddComment(newComment);
-                    ticketBL.AddCommentToTicket(ticket, newComment);
-                    int Id = TaskId;
+                    ApplicationUser user = await userBL.GetUserByName(User.Identity.Name);
+                    await ticketBL.AddCommentToTicket(user.Id, (int)TaskId, TaskText);
+                    int Id = (int)TaskId;
 
                     return RedirectToAction("Details", new { Id });
                 }
@@ -191,15 +197,22 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
             return RedirectToAction("Index");
         }
 
-        public async Task<IActionResult> UpdateHrs(int id, int hrs)
+        public async Task<IActionResult> UpdateHrs(int? id, int? hrs)
         {
             if (id != null || hrs != null)
             {
                 try
                 {
-                    Ticket ticket = ticketBL.GetTicket(id);
-                    ticket.RequiredHours = hrs;
-                    ticketBL.UpdateTicket(ticket);
+                    Ticket? ticket = ticketBL.GetTicketById((int)id);
+
+                    if (ticket == null)
+                    {
+                        return NotFound();
+                    }
+
+                    ticket.RequiredHours = (int)hrs;
+                    await ticketBL.UpdateTicket(ticket);
+
                     return RedirectToAction("Details", new { id });
                 }
                 catch (Exception)
@@ -216,15 +229,8 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
             {
                 try
                 {
-                    TicketWatcher newTickWatch = new TicketWatcher();
-                    string userName = User.Identity.Name;
-                    ApplicationUser user = await userBL.GetUserByName(userName);
-                    Ticket ticket = ticketBL.GetTicket(id);
-
-                    newTickWatch.Ticket = ticket;
-                    newTickWatch.Watcher = user;
-                    user.TicketWatching.Add(newTickWatch);
-                    ticket.TicketWatchers.Add(newTickWatch);
+                    ApplicationUser user = await userBL.GetUserByName(User.Identity.Name);
+                    await ticketBL.AddTicketToWatcher(user.Id, id);
 
                     return RedirectToAction("Details", new { id });
                 }
@@ -235,17 +241,37 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
             }
             return RedirectToAction("Index");
         }
-             
-        public async Task<IActionResult> MarkAsCompleted(int id)
+
+        public async Task<IActionResult> UnWatch(int? id)
         {
             if (id != null)
             {
                 try
                 {
-                    Ticket ticket = ticketBL.GetTicket(id);
+                    ApplicationUser user = await userBL.GetUserByName(User.Identity.Name);
+                    await ticketBL.RemoveTicketFromWatcher(user.Id, (int)id);
+
+                    return RedirectToAction("Details", new { id });
+                }
+                catch (Exception)
+                {
+                    return RedirectToAction("Error", "Home");
+                }
+            }
+
+            return RedirectToAction("Index");
+        }
+
+        public async Task<IActionResult> MarkAsCompleted(int? id)
+        {
+            if (id != null)
+            {
+                try
+                {
+                    Ticket? ticket = ticketBL.GetTicketById((int)id);
                     ticket.Completed = true;
+                    await ticketBL.UpdateTicket(ticket);
 
-                    ticketBL.UpdateTicket(ticket);
                     return RedirectToAction("Details", new { id });
                 }
                 catch (Exception)
@@ -253,19 +279,20 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
                     return RedirectToAction("Error", "Home");
                 }
             }
+
             return RedirectToAction("Index");
         }
 
-        public async Task<IActionResult> UnMarkAsCompleted(int id)
+        public async Task<IActionResult> UnMarkAsCompleted(int? id)
         {
             if (id != null)
             {
                 try
                 {
-                    Ticket ticket = ticketBL.GetTicket(id);
+                    Ticket? ticket = ticketBL.GetTicketById((int)id);
                     ticket.Completed = false;
+                    await ticketBL.UpdateTicket(ticket);
 
-                    ticketBL.UpdateTicket(ticket);
                     return RedirectToAction("Details", new { id });
                 }
                 catch (Exception)
@@ -286,7 +313,8 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
                 return NotFound();
             }
 
-            Ticket ticket = ticketBL.GetTicket((int)id);
+            Ticket? ticket = ticketBL.GetTicketById((int)id);
+
             if (ticket == null)
             {
                 return NotFound();
@@ -299,17 +327,10 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "ProjectManager")]
-        public async Task<IActionResult> DeleteConfirmed(int id, int projId)
+        public IActionResult DeleteConfirmed(int id)
         {
-            Ticket ticket = ticketBL.GetTicket(id);
-            Project currProj = projectBL.GetProject(projId);
-            if (ticket != null)
-            {
-                projectBL.RemoveTicketFromProject(currProj, ticket);
-                ticketBL.DeleteTicket(ticket);
-            }
+            ticketBL.DeleteTicket(id);
 
-            ticketBL.UpdateTicket(ticket);
             return RedirectToAction("Index", "Projects");
         }
     }

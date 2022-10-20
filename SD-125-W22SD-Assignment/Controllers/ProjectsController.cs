@@ -15,23 +15,20 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
     public class ProjectsController : Controller
     {
         private readonly ProjectBusinessLogic projectBL;
-        private readonly TicketBusinessLogic ticketBL;
-        private readonly UserProjectBusinessLogic userProjectBL;
         private UserBusinessLogic userBL;
 
         public ProjectsController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
         {
-            ticketBL = new TicketBusinessLogic(new TicketRepository(context));
             userBL = new UserBusinessLogic(userManager);
-            projectBL = new ProjectBusinessLogic(new ProjectRepository(context));
-            userProjectBL = new UserProjectBusinessLogic(new UserProjectRepository(context));
+            projectBL = new ProjectBusinessLogic(new ProjectRepository(context), new TicketRepository(context), userManager);
         }
+
         // GET: Projects
         [Authorize]
         public async Task<IActionResult> Index(string? sortOrder, int? page, bool? sort, string? userId)
         {
             List<Project> SortedProjs = new List<Project>();
-            List<ApplicationUser> allUsers = userBL.GetAllUsers(userId);
+            List<ApplicationUser> allUsers = await userBL.GetUsersByRole("Developer");
             List<SelectListItem> users = new List<SelectListItem>();
 
             allUsers.ForEach(au =>
@@ -104,7 +101,7 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
                 return NotFound();
             }
 
-            var project = projectBL.GetProject((int)id);
+            var project = projectBL.GetProjectById((int)id);
 
             if (project == null)
             {
@@ -114,23 +111,11 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
             return View(project);
         }
 
-        public async Task<IActionResult> RemoveAssignedUser(string id, int projId)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-            UserProject currUserProj = userProjectBL.GetUserProject(up => up.ProjectId == projId && up.UserId == id);
-            userProjectBL.Delete(currUserProj);
-
-            return RedirectToAction("Edit", new { id = projId });
-        }
-
         // GET: Projects/Create
         [Authorize(Roles = "ProjectManager")]
         public async Task<IActionResult> CreateAsync()
         {
-            List<ApplicationUser> allUsers = (List<ApplicationUser>)userBL.GetAllUsers("Developer");
+            List<ApplicationUser> allUsers = await userBL.GetUsersByRole("Developer");
 
             List<SelectListItem> users = new List<SelectListItem>();
             allUsers.ForEach(au =>
@@ -148,25 +133,15 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "ProjectManager")]
-        public async Task<IActionResult> Create([Bind("Id,ProjectName")] Project project, List<string> userIds)
+        public async Task<IActionResult> Create([Bind("Id,ProjectName")] Project project, List<string> usersId)
         {
             if (ModelState.IsValid)
             {
-                string userName = User.Identity.Name;
+                await projectBL.CreateProject(User, project, usersId);
 
-                ApplicationUser createdBy = await userBL.GetUserByName(userName);
-                userIds.ForEach(async (user) =>
-                {
-                    ApplicationUser currUser = await userBL.GetUser(user);
-                    UserProject newUserProj = new UserProject();
-                    newUserProj.ApplicationUser = currUser;
-                    newUserProj.UserId = currUser.Id;
-                    newUserProj.Project = project;
-                    project.AssignedTo.Add(newUserProj);
-                });
-                projectBL.CreateProject(project);
                 return RedirectToAction(nameof(Index));
             }
+
             return View(project);
         }
 
@@ -174,21 +149,21 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
         [Authorize(Roles = "ProjectManager")]
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null || projectBL == null)
+            if (id == null)
             {
                 return NotFound();
             }
 
-            var project = projectBL.GetProject((int)id);
+            Project? project = projectBL.GetProjectById((int)id);
 
             if (project == null)
             {
                 return NotFound();
             }
 
-            List<ApplicationUser> results = await userBL.GetAllUsers(project.Id.ToString()).ToListAsync();
-            List<SelectListItem> currUsers = new List<SelectListItem>();
+            List<ApplicationUser> results = await userBL.GetUsersByRole("Developer");
 
+            List<SelectListItem> currUsers = new List<SelectListItem>();
             results.ForEach(r =>
             {
                 currUsers.Add(new SelectListItem(r.UserName, r.Id.ToString()));
@@ -204,7 +179,7 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "ProjectManager")]
-        public async Task<IActionResult> Edit(int id, List<string> userIds, [Bind("Id,ProjectName")] Project project)
+        public async Task<IActionResult> Edit(int id, List<string> usersId, [Bind("Id,ProjectName")] Project project)
         {
             if (id != project.Id)
             {
@@ -215,20 +190,12 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
             {
                 try
                 {
-                    userIds.ForEach(async (user) =>
-                    {
-                        ApplicationUser currUser = await userBL.GetUserByName(user);
-                        UserProject newUserProj = new UserProject();
-                        newUserProj.ApplicationUser = currUser;
-                        newUserProj.UserId = currUser.Id;
-                        newUserProj.Project = project;
-                        project.AssignedTo.Add(newUserProj);
-                    });
-                    projectBL.EditProject(project);
+                    projectBL.EditProject(project.Id, project.ProjectName);
+                    await projectBL.AssignUsers(project.Id, usersId);
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!ProjectExists(project.Id))
+                    if (!projectBL.Exists(project.Id))
                     {
                         return NotFound();
                     }
@@ -237,8 +204,10 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
                         throw;
                     }
                 }
+
                 return RedirectToAction(nameof(Edit), new { id = id });
             }
+
             return View(project);
         }
 
@@ -246,12 +215,13 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
         [Authorize(Roles = "ProjectManager")]
         public async Task<IActionResult> Delete(int? id)
         {
-            if (id == null || projectBL == null)
+            if (id == null)
             {
                 return NotFound();
             }
 
-            var project = projectBL.GetProject((int)id);
+            Project? project = projectBL.GetProjectById((int)id);
+
             if (project == null)
             {
                 return NotFound();
@@ -264,37 +234,16 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = "ProjectManager")]
-        public async Task<IActionResult> DeleteConfirmed(int id)
+        public IActionResult DeleteConfirmed(int id)
         {
-            if (projectBL == null)
+            if (id == null)
             {
-                return Problem("Entity set 'ApplicationDbContext.Projects'  is null.");
+                return NotFound();
             }
-            var project = projectBL.GetProject(id);
 
-            if (project != null)
-            {
-                List<Ticket> tickets = project.Tickets.ToList();
-                tickets.ForEach(ticket =>
-                {
-                    ticketBL.DeleteTicket(ticket);
-                });
-
-                List<UserProject> userProjects = userProjectBL.GetUserProjects(up => up.ProjectId == project.Id).ToList();
-                userProjects.ForEach(userProj =>
-                {
-                    userProjectBL.Delete(userProj);
-                });
-
-                projectBL.DeleteProject(project);
-            }
+            projectBL.DeleteProject(id);
 
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool ProjectExists(int id)
-        {
-            return (projectBL.GetAllProjects()?.Any(e => e.Id == id)).GetValueOrDefault();
         }
     }
 }

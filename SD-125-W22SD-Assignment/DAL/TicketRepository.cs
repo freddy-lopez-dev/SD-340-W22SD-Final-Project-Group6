@@ -12,7 +12,7 @@ namespace SD_340_W22SD_Final_Project_Group6.DAL
             _db = db;
         }
 
-        public void Add(Ticket ticket)
+        public void Create(Ticket ticket)
         {
             _db.Tickets.Add(ticket);
         }
@@ -22,24 +22,24 @@ namespace SD_340_W22SD_Final_Project_Group6.DAL
             _db.Tickets.Remove(ticket);
         }
 
-        public Ticket Get(int id)
+        public Ticket? GetById(int id)
         {
-            return _db.Tickets.Include(t => t.Owner).Include(t => t.TicketWatchers).Include(t => t.Comments).First(t => t.Id == id);
+            return _db.Tickets.Include(t => t.Project).Include(t => t.TicketWatchers).ThenInclude(tw => tw.Watcher).Include(u => u.Owner).Include(t => t.Comments).ThenInclude(c => c.CreatedBy).First(t => t.Id == id);
         }
 
-        public Ticket Get(Func<Ticket, bool> predicate)
+        public Ticket? Get(Func<Ticket, bool> predicate)
         {
-            throw new NotImplementedException();
+            return _db.Tickets.Include(t => t.Project).Include(t => t.TicketWatchers).ThenInclude(tw => tw.Watcher).Include(u => u.Owner).Include(t => t.Comments).ThenInclude(c => c.CreatedBy).First(predicate);
         }
 
         public ICollection<Ticket> GetAll()
         {
-            return _db.Tickets.Include(t => t.Owner).Include(t => t.TicketWatchers).Include(t => t.Comments).ToList();
+            return _db.Tickets.Include(t => t.Project).Include(t => t.TicketWatchers).ThenInclude(tw => tw.Watcher).Include(u => u.Owner).Include(t => t.Comments).ThenInclude(c => c.CreatedBy).ToList();
         }
 
         public ICollection<Ticket> GetList(Func<Ticket, bool> predicate)
         {
-            return _db.Tickets.Include(t => t.Owner).Include(t => t.TicketWatchers).Include(t => t.Comments).Where(predicate).ToList();
+            return _db.Tickets.Include(t => t.Project).Include(t => t.TicketWatchers).ThenInclude(tw => tw.Watcher).Include(u => u.Owner).Include(t => t.Comments).ThenInclude(c => c.CreatedBy).Where(predicate).ToList();
         }
 
         public void Save()
@@ -49,8 +49,12 @@ namespace SD_340_W22SD_Final_Project_Group6.DAL
 
         public Ticket Update(Ticket ticket)
         {
-            _db.Tickets.Update(ticket);
-            return ticket;
+            return _db.Tickets.Update(ticket).Entity;
+        }
+
+        public void RemoveWatcher(TicketWatcher watcher)
+        {
+            _db.TicketWatchers.Remove(watcher);
         }
     }
 }

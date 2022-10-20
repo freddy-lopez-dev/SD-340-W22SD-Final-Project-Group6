@@ -1,27 +1,35 @@
-﻿using SD_340_W22SD_Final_Project_Group6.DAL;
+﻿using Microsoft.AspNetCore.Identity;
+using SD_340_W22SD_Final_Project_Group6.DAL;
 using SD_340_W22SD_Final_Project_Group6.Models;
 
 namespace SD_340_W22SD_Final_Project_Group6.BLL
 {
     public class CommentBusinessLogic
     {
-        public IRepository<Comment> _repo;
+        private readonly CommentRepository _commentRepo;
+        private readonly ProjectRepository _projectRepo;
+        private readonly TicketRepository _ticketRepo;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public CommentBusinessLogic(IRepository<Comment> repo)
+
+        public CommentBusinessLogic(CommentRepository commentRepo, ProjectRepository projectRepo, TicketRepository ticketRepo, UserManager<ApplicationUser> userManager)
         {
-            _repo = repo;
+            _commentRepo = commentRepo;
+            _projectRepo = projectRepo;
+            _ticketRepo = ticketRepo;
+            _userManager = userManager;
         }
 
         public void AddComment(Comment comment)
         {
-            _repo.Add(comment);
+            _commentRepo.Create(comment);
         }
 
         public void DeleteComment(Comment comment)
         {
-            _repo.Delete(comment);
-            _repo.Update(comment);
-            _repo.Save();
+            _commentRepo.Delete(comment);
+            _commentRepo.Update(comment);
+            _commentRepo.Save();
         }
     }
 }

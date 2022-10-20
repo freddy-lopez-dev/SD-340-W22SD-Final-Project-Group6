@@ -1,62 +1,128 @@
-﻿using SD_340_W22SD_Final_Project_Group6.DAL;
+﻿using Microsoft.AspNetCore.Identity;
+using SD_340_W22SD_Final_Project_Group6.DAL;
 using SD_340_W22SD_Final_Project_Group6.Models;
 
 namespace SD_340_W22SD_Final_Project_Group6.BLL
 {
     public class TicketBusinessLogic
     {
-        private IRepository<Ticket> _repo;
-        public TicketBusinessLogic(IRepository<Ticket> repository)
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ProjectRepository _projectRepo;
+        private readonly TicketRepository _ticketRepo;
+        private readonly CommentRepository _commentRepo;
+
+        public TicketBusinessLogic(UserManager<ApplicationUser> userManager, ProjectRepository projectRepo, TicketRepository ticketRepo, CommentRepository commentRep)
         {
-            _repo = repository;
+            _userManager = userManager;
+            _projectRepo = projectRepo;
+            _ticketRepo = ticketRepo;
+            _commentRepo = commentRep;
         }
 
-        public void AddTicket(Ticket ticket)
+        public Ticket? GetTicketById(int id)
         {
-            _repo.Add(ticket);
+            return _ticketRepo.GetById(id);
         }
 
-        public void DeleteTicket(Ticket ticket)
+        public List<Ticket> GetAllTickets()
         {
-            _repo.Delete(ticket);
+            return (List<Ticket>)_ticketRepo.GetAll();
         }
 
-        public Ticket GetTicket(int id)
+        public async Task CreateTicket(Ticket ticket, int projectId, string userId)
         {
-            return _repo.Get(id);
+            Project? project = _projectRepo.GetById(projectId);
+            ApplicationUser owner = await _userManager.FindByIdAsync(userId);
+
+            if (project == null)
+            {
+                throw new ArgumentException("No project found with this Id");
+            }
+
+            ticket.Project = project;
+            ticket.Owner = owner;
+            _ticketRepo.Create(ticket);
+            _ticketRepo.Save();
         }
 
-        public void AddCommentToTicket(Ticket ticket, Comment comment)
+        public async Task UpdateTicket(Ticket ticket)
         {
+            _ticketRepo.Update(ticket);
+            _ticketRepo.Save();
 
-            ticket.Comments.Add(comment);
-            _repo.Update(ticket);
-            _repo.Save();
         }
 
-        public Ticket GetTicket(Func<Ticket, bool> predicate)
+        public void DeleteTicket(int id)
         {
-            return _repo.Get(predicate);
+            Ticket? ticket = _ticketRepo.GetById(id);
+
+            if (ticket == null)
+            {
+                throw new ArgumentException("No ticket found with this Id");
+            }
+
+            _ticketRepo.Delete(ticket);
+            _ticketRepo.Save();
         }
 
-        public List<Ticket> GetTickets()
+        public async Task AddCommentToTicket(string userId, int ticketId, string description)
         {
-            return (List<Ticket>)_repo.GetAll();
+            ApplicationUser user = await _userManager.FindByIdAsync(userId);
+            Ticket? ticket = _ticketRepo.GetById(ticketId);
+
+            if (ticket == null)
+            {
+                throw new ArgumentException("No ticket found with this Id");
+            }
+
+            Comment comment = new Comment();
+            comment.CreatedBy = user;
+            comment.Description = description;
+            comment.Ticket = ticket;
+
+            _commentRepo.Create(comment);
+            _commentRepo.Save();
         }
 
-        public List<Ticket> GetTickets(Func<Ticket, bool> predicate)
+        public async Task AddTicketToWatcher(string userId, int ticketId)
         {
-            return (List<Ticket>)_repo.GetList(predicate);
+            ApplicationUser user = await _userManager.FindByIdAsync(userId);
+            Ticket? ticket = _ticketRepo.GetById(ticketId);
+
+            if (ticket == null)
+            {
+                throw new ArgumentException("No ticket found with this Id");
+            }
+
+            TicketWatcher ticketWatcher = new TicketWatcher();
+            ticketWatcher.Ticket = ticket;
+            ticketWatcher.Watcher = user;
+            ticket.TicketWatchers.Add(ticketWatcher);
+            _ticketRepo.Update(ticket);
+            _ticketRepo.Save();
         }
 
-        public Ticket UpdateTicket(Ticket ticket)
+        public async Task RemoveTicketFromWatcher(string userId, int ticketId)
         {
-            return _repo.Update(ticket);
+            ApplicationUser user = await _userManager.FindByIdAsync(userId);
+            Ticket? ticket = _ticketRepo.GetById(ticketId);
+
+            if (ticket == null)
+            {
+                throw new ArgumentException("No ticket found with this Id");
+            }
+
+            TicketWatcher ticketWatcher = ticket.TicketWatchers.First(tw => tw.Watcher.Id == user.Id);
+
+            _ticketRepo.RemoveWatcher(ticketWatcher);
+            _ticketRepo.Save();
         }
 
-        public void SaveChanges()
+        public bool Exists(int id)
         {
-            _repo.Save();
+            Ticket? ticket = _ticketRepo.GetById(id);
+
+            return ticket != null;
         }
     }
 }

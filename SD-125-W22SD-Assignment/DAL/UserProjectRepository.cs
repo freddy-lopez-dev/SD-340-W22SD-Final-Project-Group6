@@ -12,13 +12,13 @@ namespace SD_340_W22SD_Final_Project_Group6.DAL
             _db = db;
         }
 
-        public void Add(UserProject entity)
+        public void Create(UserProject entity)
         {
             _db.UserProjects.Add(entity);
         }
 
         // READ
-        public UserProject Get(int id)
+        public UserProject GetById(int id)
         {
             return _db.UserProjects.Include(p => p.ProjectId).Include(p => p.UserId).First(p => p.Id == id);
         }

@@ -11,7 +11,7 @@ namespace SD_340_W22SD_Final_Project_Group6.DAL
         {
             _db = db;
         }
-        public void Add(Comment entity)
+        public void Create(Comment entity)
         {
             _db.Comments.Add(entity);
         }
@@ -21,14 +21,14 @@ namespace SD_340_W22SD_Final_Project_Group6.DAL
             _db.Comments.Remove(entity);
         }
 
-        public Comment Get(int id)
+        public Comment? GetById(int id)
         {
             return _db.Comments.FirstOrDefault(c => c.Id == id);
         }
 
         public Comment Get(Func<Comment, bool> predicate)
         {
-            throw new NotImplementedException();
+            return _db.Comments.FirstOrDefault(predicate);
         }
 
         public ICollection<Comment> GetAll()
@@ -38,7 +38,7 @@ namespace SD_340_W22SD_Final_Project_Group6.DAL
 
         public ICollection<Comment> GetList(Func<Comment, bool> predicate)
         {
-            throw new NotImplementedException();
+            return _db.Comments.Where(predicate).ToList();
         }
 
         public void Save()
@@ -48,8 +48,7 @@ namespace SD_340_W22SD_Final_Project_Group6.DAL
 
         public Comment Update(Comment entity)
         {
-            _db.Comments.Update(entity);
-            return entity;
+            return _db.Comments.Update(entity).Entity;
         }
     }
 }

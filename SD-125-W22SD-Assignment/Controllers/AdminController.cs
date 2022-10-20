@@ -14,22 +14,35 @@ namespace SD_340_W22SD_Final_Project_Group6.Controllers
     {
         private readonly UserBusinessLogic userBL;
 
-        public AdminController(UserManager<ApplicationUser> users)
+        public AdminController(UserManager<ApplicationUser> userManager)
         {
-            userBL = new UserBusinessLogic(users);
+            userBL = new UserBusinessLogic(userManager);
         }
 
         public async Task<IActionResult> Index()
         {
-            ProjectManagersAndDevelopersViewModels vm = await userBL.GetIndexAsync();
+            List<ApplicationUser> projectManager = await userBL.GetUsersByRole("ProjectManager");
+            List<ApplicationUser> developers = await userBL.GetUsersByRole("Developer");
+            List<ApplicationUser> allUsers = userBL.GetAllUsers();
+
+            ProjectManagersAndDevelopersViewModels vm = new ProjectManagersAndDevelopersViewModels();
+            vm.pms = projectManager;
+            vm.devs = developers;
+            vm.allUsers = allUsers;
 
             return View(vm);
         }
 
-        public async Task<IActionResult> GetAllUsersAsync()
+        public IActionResult ReassignRole()
         {
-            List<ApplicationUser> allUsers = (List<ApplicationUser>)(await userBL.GetAllUsers())[0];
-            ViewBag.Users = (List<SelectListItem>)(await userBL.GetAllUsers())[1];
+            List<ApplicationUser> allUsers = userBL.GetAllUsers();
+
+            List<SelectListItem> users = new List<SelectListItem>();
+            allUsers.ForEach(u =>
+            {
+                users.Add(new SelectListItem(u.UserName, u.Id.ToString()));
+            });
+            ViewBag.Users = users;
 
             return View(allUsers);
         }
