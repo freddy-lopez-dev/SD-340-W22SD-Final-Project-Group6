@@ -45,7 +45,7 @@ namespace ApplicationUnitTesting
 
         [DataRow("InvalidName")]
         [TestMethod]
-        public void GetUserByName_InvalidIdentity_ReturnNullWhenNoNamesMatch(string name)
+        public void GetUserByName_InvalidInput_ReturnNullWhenNoNamesMatch(string name)
         {
             Assert.ThrowsExceptionAsync<ArgumentException>(async () =>
             {
@@ -94,7 +94,7 @@ namespace ApplicationUnitTesting
 
         [DataRow("InavalidRole")]
         [TestMethod]
-        public void GetAllUsersWithSpecificRoleAsync_InvalidRoleInput_ArgumentException(string role)
+        public void GetAllUsersWithSpecificRole_InvalidRoleInput_ArgumentException(string role)
         {
             Assert.ThrowsExceptionAsync<ArgumentException>(async () =>
             {
@@ -116,7 +116,7 @@ namespace ApplicationUnitTesting
 
         [DataRow("TestUserId")]
         [TestMethod]
-        public Task AssignUserToARoleAsync_InvalidRole_ArgumentException(string userId)
+        public Task AssignUserToARole_InvalidRole_ArgumentException(string userId)
         {
             ApplicationUser user = userBusinessLogic.GetUser(userId);
 
