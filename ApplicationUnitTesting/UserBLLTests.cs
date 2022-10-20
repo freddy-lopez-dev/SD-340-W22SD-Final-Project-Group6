@@ -60,7 +60,7 @@ namespace ApplicationUnitTesting
         }
 
         [TestMethod]
-        public async Task GetUserById_ReturnNullWhenNoIdsMatch()
+        public async Task GetUserById_ReturnNullWhenNoIdMatch()
         {
             var user = new ApplicationUser
             {
